@@ -72,33 +72,19 @@ def user_has_access(user_plan: str, required_plan: str) -> bool:
 # --- ================================== ---
 # --- 3. FIREBASE INTEGRATION (ADVANCED) ---
 # --- ================================== ---
-# In section 3. FIREBASE INTEGRATION (ADVANCED)
-
 class FirebaseService:
     def __init__(self, creds_path: str):
         self.initialized = False
         try:
-            # Check for Vercel's environment variable first
-            firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS")
-            if firebase_creds_json:
-                print("Found Firebase credentials in environment variable.")
-                creds_dict = json.loads(firebase_creds_json)
-                cred = credentials.Certificate(creds_dict)
-            # Fallback to local file for development
-            elif os.path.exists(creds_path):
-                print("Found local firebase-credentials.json file.")
-                cred = credentials.Certificate(creds_path)
+            if os.path.exists(creds_path):
+                if not firebase_admin._apps:
+                    cred = credentials.Certificate(creds_path)
+                    project_id = cred.project_id
+                    firebase_admin.initialize_app(cred, {'storageBucket': f'{project_id}.appspot.com'})
+                self.initialized = True
+                print("✅ Firebase Service Initialized Successfully.")
             else:
                 print("⚠️ Firebase credentials not found. FirebaseService is disabled.")
-                return
-
-            if not firebase_admin._apps:
-                project_id = cred.project_id
-                firebase_admin.initialize_app(cred, {'storageBucket': f'{project_id}.appspot.com'})
-            
-            self.initialized = True
-            print("✅ Firebase Service Initialized Successfully.")
-            
         except Exception as e:
             print(f"🔥 Firebase Initialization Failed: {e}")
 
@@ -176,13 +162,13 @@ def seed_data(conn):
         ('Robotics Vision Systems', 'course', 'Learn to build computer vision systems for robots.', 0.00, None,
          '/static_placeholder/img/course_robotics.jpg', -1,
          json.dumps({'video_url': 'https://www.youtube.com/embed/8e1b-3h8Jj4'}), False, 'ultimate'),
-        ('Basic Subscription', 'subscription', 'Access to basic courses and community.', 9.99, STRIPE_PRICE_ID_BASIC,
+        ('Basic Subscription', 'subscription', 'Access to basic courses and community.', 0.99, STRIPE_PRICE_ID_BASIC,
          '/static_placeholder/img/sub_basic.jpg', -1, json.dumps({'features': ['Basic Courses', 'Forum Access']}),
          False, 'none'),
-        ('Premium Subscription', 'subscription', 'Premium courses and direct support.', 29.99, STRIPE_PRICE_ID_PREMIUM,
+        ('Premium Subscription', 'subscription', 'Premium courses and direct support.', 9.99, STRIPE_PRICE_ID_PREMIUM,
          '/static_placeholder/img/sub_premium.jpg', -1, json.dumps({'features': ['All Courses', 'Source Code Access']}),
          True, 'none'),
-        ('Ultimate Subscription', 'subscription', 'All access plus 1-on-1 mentorship.', 99.99, STRIPE_PRICE_ID_ULTIMATE,
+        ('Ultimate Subscription', 'subscription', 'All access plus 1-on-1 mentorship.', 19.99, STRIPE_PRICE_ID_ULTIMATE,
          '/static_placeholder/img/sub_ultimate.jpg', -1, json.dumps({'features': ['All Access', 'Mentorship Calls']}),
          False, 'none'),
     ]
@@ -441,43 +427,86 @@ footer .footer-links { list-style: none; display: flex; gap: 25px; justify-conte
 @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
 .service-icon { font-size: 3rem; margin-bottom: 1rem; color: var(--accent-color); }
-/* --- Carousel Styles --- */
-.carousel-section { padding: 0; height: 85vh; max-height: 800px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #050511; }
-.carousel-container { width: 100%; height: 100%; position: relative; perspective: 1200px; }
-.carousel-slide {
-    position: absolute; width: 100%; height: 100%;
-    transform-style: preserve-3d;
-    transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease;
+/* --- Gallery Styles --- */
+.gallery-section { background: var(--bg-color-lighter); }
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    aspect-ratio: 4 / 3;
+    cursor: pointer;
+}
+.gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease-out, filter 0.5s ease;
+}
+.gallery-item:hover .gallery-img {
+    transform: scale(1.15);
+    filter: brightness(0.5);
+}
+.gallery-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    color: white;
+    transform: translateY(100%);
     opacity: 0;
+    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
-.carousel-slide.active { opacity: 1; z-index: 10; transform: translateZ(0) translateX(0) rotateY(0); }
-.carousel-slide.prev { opacity: 0.4; z-index: 5; transform: translateZ(-300px) translateX(-50%) rotateY(35deg); }
-.carousel-slide.next { opacity: 0.4; z-index: 5; transform: translateZ(-300px) translateX(50%) rotateY(-35deg); }
-.carousel-image { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; filter: brightness(0.6); }
-.carousel-content {
-    position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
-    color: white; text-align: center; width: 80%; max-width: 700px;
-    background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); padding: 2rem; border-radius: 10px;
+.gallery-item:hover .gallery-overlay {
+    transform: translateY(0);
+    opacity: 1;
 }
-.carousel-content h2 { font-size: 2.5rem; text-shadow: 2px 2px 8px #000; margin: 0; }
-.carousel-content p { font-size: 1.1rem; margin: 0.5rem 0 1.5rem; }
-.carousel-nav-btn {
-    position: absolute; top: 50%; transform: translateY(-50%); z-index: 20;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-    color: white; font-size: 2rem; width: 50px; height: 50px; border-radius: 50%;
-    cursor: pointer; transition: background-color 0.3s;
+.gallery-overlay h3 { color: #fff; text-shadow: none; margin-bottom: 10px; }
+.gallery-actions { display: flex; gap: 10px; }
+.btn-sm { padding: 8px 16px; font-size: 0.9rem; }
+
+/* --- Lightbox Styles --- */
+#lightbox-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(10, 10, 31, 0.9);
+    backdrop-filter: blur(8px);
+    z-index: 5000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    cursor: pointer;
 }
-.carousel-nav-btn:hover { background: rgba(255,255,255,0.2); }
-#carousel-prev { left: 2%; }
-#carousel-next { right: 2%; }
-.carousel-dots {
-    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-    z-index: 20; display: flex; gap: 10px;
+#lightbox-img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 3px solid var(--accent-color);
+    box-shadow: 0 0 40px var(--glow-color);
+    animation: zoomIn 0.5s ease-out;
 }
-.carousel-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: background-color 0.3s; }
-.carousel-dot.active { background: var(--accent-color); }
-.carousel-progress-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--accent-color); width: 0; z-index: 21; }
-@keyframes progress { from { width: 0%; } to { width: 100%; } }
+#lightbox-close {
+    position: absolute;
+    top: 30px; right: 40px;
+    font-size: 3rem;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+#lightbox-close:hover { transform: scale(1.2); color: var(--accent-color); }
+@keyframes zoomIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 """
 GLOBAL_JS = """
 document.addEventListener('DOMContentLoaded', function() {
@@ -555,80 +584,73 @@ function applyTheme(themeName) {
     }
     localStorage.setItem('sloganTechTheme', themeName);
 }
-class Carousel {
-    constructor(selector) {
-        this.container = document.querySelector(selector);
-        if (!this.container) return;
-        this.slides = this.container.querySelectorAll('.carousel-slide');
-        this.dots = this.container.querySelectorAll('.carousel-dot');
-        this.nextBtn = document.getElementById('carousel-next');
-        this.prevBtn = document.getElementById('carousel-prev');
-        this.currentIndex = 0;
-        this.slideInterval;
-        this.progressBar = this.container.querySelector('.carousel-progress-bar');
-        this.init();
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply saved theme on page load
+    applyTheme(localStorage.getItem('sloganTechTheme') || 'theme-cyan');
+
+    // Mobile menu toggle
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navUl = document.querySelector('nav ul');
+    if (menuToggle && navUl) {
+        menuToggle.addEventListener('click', () => navUl.classList.toggle('active'));
     }
-    init() {
-        this.nextBtn.addEventListener('click', () => this.nextSlide());
-        this.prevBtn.addEventListener('click', () => this.prevSlide());
-        this.dots.forEach(dot => {
-            dot.addEventListener('click', (e) => this.goToSlide(parseInt(e.target.dataset.index)));
-        });
-        this.container.addEventListener('mouseenter', () => this.pause());
-        this.container.addEventListener('mouseleave', () => this.play());
-        this.updateCarousel();
-        this.play();
-    }
-    goToSlide(index) {
-        this.currentIndex = index;
-        this.updateCarousel();
-        this.resetInterval();
-    }
-    nextSlide() {
-        this.currentIndex = (this.currentIndex + 1) % this.slides.length;
-        this.updateCarousel();
-        this.resetInterval();
-    }
-    prevSlide() {
-        this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
-        this.updateCarousel();
-        this.resetInterval();
-    }
-    updateCarousel() {
-        const prevIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
-        const nextIndex = (this.currentIndex + 1) % this.slides.length;
-        this.slides.forEach((slide, index) => {
-            slide.classList.remove('active', 'prev', 'next');
-            if (index === this.currentIndex) slide.classList.add('active');
-            else if (index === prevIndex) slide.classList.add('prev');
-            else if (index === nextIndex) slide.classList.add('next');
-        });
-        this.dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === this.currentIndex);
-        });
-        this.startProgressBar();
-    }
-    play() {
-        this.slideInterval = setInterval(() => this.nextSlide(), 5000);
-        this.startProgressBar();
-    }
-    pause() {
-        clearInterval(this.slideInterval);
-        this.progressBar.style.animationPlayState = 'paused';
-    }
-    resetInterval() {
-        this.pause();
-        this.play();
-    }
-    startProgressBar() {
-        if(this.progressBar) {
-            this.progressBar.style.animation = 'none';
-            // Trigger reflow
-            this.progressBar.offsetHeight; 
-            this.progressBar.style.animation = 'progress 5s linear forwards';
-            this.progressBar.style.animationPlayState = 'running';
+
+    // Active nav link styling
+    const navLinks = document.querySelectorAll('nav ul li a');
+    const currentLocation = window.location.pathname;
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentLocation) {
+            link.classList.add('active');
         }
-    }
+    });
+
+    // Fade-in sections on scroll
+    const sections = document.querySelectorAll('.fade-in-section');
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    sections.forEach(section => observer.observe(section));
+
+    // Initialize Lightbox functionality
+    initGalleryLightbox();
+});
+
+// NEW: Lightbox functionality
+function initGalleryLightbox() {
+    const lightbox = document.getElementById('lightbox-overlay');
+    if (!lightbox) return;
+
+    const lightboxImg = document.getElementById('lightbox-img');
+    const closeBtn = document.getElementById('lightbox-close');
+    const triggers = document.querySelectorAll('.gallery-lightbox-trigger');
+
+    triggers.forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents the gallery item's main link from firing
+            const imgSrc = trigger.dataset.lightboxSrc;
+            if (imgSrc) {
+                lightboxImg.src = imgSrc;
+                lightbox.style.display = 'flex';
+            }
+        });
+    });
+
+    const closeLightbox = () => {
+        lightbox.style.display = 'none';
+    };
+
+    closeBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) { // Close only if clicking the background
+            closeLightbox();
+        }
+    });
+}
 """
 SHOP_COMPONENT_JS = """
 class ShopComponent {
@@ -877,16 +899,15 @@ async def add_user_to_state(request: Request, call_next):
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     with get_db_connection() as conn:
+        # Query for the "Innovations" grid (top 3)
         featured_products = conn.execute(
             "SELECT * FROM products WHERE is_featured = 1 AND category != 'subscription' LIMIT 3").fetchall()
-    featured_html = "".join([f"""
-    <div class="card">
-        <div class="card-image-placeholder"><img src="{p['image_url']}" alt="{p['name']}"></div>
-        <h3>{p['name']}</h3><p>{p['description']}</p>
-        <a href="{'/' + p['category'] + ('s' if p['category'] != 'game' else '')}" class="btn mt-3">Explore</a>
-    </div>
-    """ for p in featured_products])
-    content = f"""
+        # Query for the new gallery (up to 6 items)
+        gallery_items = conn.execute(
+            "SELECT * FROM products WHERE is_featured = 1 AND category != 'subscription' LIMIT 6").fetchall()
+
+    # --- Section 1: Static Hero ---
+    hero_html = """
     <section class="hero">
         <div class="hero-content">
             <h1>Forge The Future</h1>
@@ -895,15 +916,58 @@ async def home(request: Request):
             <a href="/shop" class="btn btn-secondary" style="margin-left: 20px;">Explore Tech</a>
         </div>
     </section>
+    """
+
+    # --- Section 2: Innovations Grid ---
+    innovations_cards_html = "".join([f"""
+    <div class="card">
+        <div class="card-image-placeholder"><img src="{p['image_url']}" alt="{p['name']}"></div>
+        <h3>{p['name']}</h3>
+        <p>{p['description']}</p>
+        <a href="/{'courses' if p['category'] == 'course' else 'shop'}" class="btn mt-3">Explore</a>
+    </div>
+    """ for p in featured_products])
+
+    innovations_section_html = f"""
     <section id="features" class="section fade-in-section">
         <div class="container">
             <h2 class="section-title">Our Innovations</h2>
-            <div class="card-grid">{featured_html}</div>
+            <div class="card-grid">{innovations_cards_html}</div>
         </div>
     </section>
     """
-    return HTMLResponse(get_base_html("Home", content, request, "/"))
 
+    # --- Section 3: New Image Gallery ---
+    gallery_cards_html = ""
+    for p in gallery_items:
+        link_url = f"/courses/{p['id']}" if p['category'] == 'course' else "/shop"
+        gallery_cards_html += f"""
+        <div class="gallery-item">
+            <img src="{p['image_url']}" alt="{p['name']}" class="gallery-img">
+            <div class="gallery-overlay">
+                <h3>{p['name']}</h3>
+                <div class="gallery-actions">
+                    <a href="{link_url}" class="btn btn-secondary btn-sm">Details</a>
+                    <button class="btn btn-sm gallery-lightbox-trigger" data-lightbox-src="{p['image_url']}">Zoom</button>
+                </div>
+            </div>
+        </div>
+        """
+
+    gallery_section_html = f"""
+    <section class="section gallery-section fade-in-section">
+        <div class="container">
+            <h2 class="section-title">Product Showcase</h2>
+            <div class="gallery-grid">{gallery_cards_html}</div>
+        </div>
+    </section>
+    """
+
+    # --- Assemble final page content ---
+    content = hero_html + innovations_section_html + gallery_section_html
+
+    # The extra JS for the carousel is no longer needed, as lightbox logic is global now.
+    return HTMLResponse(get_base_html("Home", content, request, "/"))
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
