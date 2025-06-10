@@ -1,18 +1,11 @@
-
-# Core web framework
+# requirements.txt
 fastapi
-
-# ASGI server for local development
 uvicorn
-
-# JWT handling for authentication
 python-jose[cryptography]
-
-# Password hashing
 passlib[bcrypt]
-
-# Stripe integration for payments
 stripe
-
-# Firebase integration (optional, but included)
 firebase-admin
+# pydantic is usually a dependency of fastapi, but good to have
+pydantic
+# Required for Form(...) usage
+python-multipart
