@@ -72,19 +72,33 @@ def user_has_access(user_plan: str, required_plan: str) -> bool:
 # --- ================================== ---
 # --- 3. FIREBASE INTEGRATION (ADVANCED) ---
 # --- ================================== ---
+# In section 3. FIREBASE INTEGRATION (ADVANCED)
+
 class FirebaseService:
     def __init__(self, creds_path: str):
         self.initialized = False
         try:
-            if os.path.exists(creds_path):
-                if not firebase_admin._apps:
-                    cred = credentials.Certificate(creds_path)
-                    project_id = cred.project_id
-                    firebase_admin.initialize_app(cred, {'storageBucket': f'{project_id}.appspot.com'})
-                self.initialized = True
-                print("✅ Firebase Service Initialized Successfully.")
+            # Check for Vercel's environment variable first
+            firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS")
+            if firebase_creds_json:
+                print("Found Firebase credentials in environment variable.")
+                creds_dict = json.loads(firebase_creds_json)
+                cred = credentials.Certificate(creds_dict)
+            # Fallback to local file for development
+            elif os.path.exists(creds_path):
+                print("Found local firebase-credentials.json file.")
+                cred = credentials.Certificate(creds_path)
             else:
                 print("⚠️ Firebase credentials not found. FirebaseService is disabled.")
+                return
+
+            if not firebase_admin._apps:
+                project_id = cred.project_id
+                firebase_admin.initialize_app(cred, {'storageBucket': f'{project_id}.appspot.com'})
+            
+            self.initialized = True
+            print("✅ Firebase Service Initialized Successfully.")
+            
         except Exception as e:
             print(f"🔥 Firebase Initialization Failed: {e}")
 
