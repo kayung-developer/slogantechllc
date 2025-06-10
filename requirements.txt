@@ -1,0 +1,18 @@
+
+# Core web framework
+fastapi
+
+# ASGI server for local development
+uvicorn
+
+# JWT handling for authentication
+python-jose[cryptography]
+
+# Password hashing
+passlib[bcrypt]
+
+# Stripe integration for payments
+stripe
+
+# Firebase integration (optional, but included)
+firebase-admin

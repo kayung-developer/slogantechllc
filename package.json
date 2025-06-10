@@ -1,0 +1,15 @@
+{
+  "name": "slogan-tech-intelliweb",
+  "version": "2.3.1",
+  "description": "Deployment tools for the Slogan Tech IntelliWeb Engine.",
+  "scripts": {
+    "deploy": "vercel --prod",
+    "deploy:firebase": "firebase deploy"
+  },
+  "author": "Slogan Technologies LLC",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^13.0.0",
+    "vercel": "^32.0.0"
+  }
+}
